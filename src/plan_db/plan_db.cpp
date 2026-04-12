@@ -1,5 +1,24 @@
 #include "../../include/plan_db/plan_db.h"
 
+std::string split_string(std::string input_string, char input_char)
+{
+    std::string result = "";
+    
+    for(int i=0; i<(int)input_string.size(); i++)
+    {
+        if(input_string[i] != input_char)
+        {
+            result += input_string[i];
+        }
+        else
+        {
+            return result;
+        }
+    }
+    
+    return result;
+}
+
 
 PlanDB::PlanDB(std::string file_path)
 {

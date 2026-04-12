@@ -44,6 +44,16 @@ Maneuver::Maneuver(neptus_msgs::msg::PlanManeuver maneuver)
     duration = maneuver.maneuver.duration;
     radius = maneuver.maneuver.radius;
 
+    mission_time = maneuver.maneuver.mission_time;
+    mission_start_delay = maneuver.maneuver.mission_start_delay;
+    thruster_power = maneuver.maneuver.thruster_power;
+    vertical_rudders_angle = maneuver.maneuver.vertical_rudders_angle;
+    horizontal_rudders_angle = maneuver.maneuver.horizontal_rudders_angle;
+    cycle_frequency = maneuver.maneuver.cycle_frequency;
+    num_cycles = (uint16_t)std::round(mission_time * cycle_frequency);
+    start_test_mission = false;
+
+
     for(int i = 0; i < (int)maneuver.maneuver.polygon.size(); i++)
     {
         vsa_guidance::polygon_vertex_t vertex;
@@ -163,6 +173,13 @@ Json::Value Maneuver::serialize_json()
     maneuver_["coff"] = coff;
     maneuver_["alternation"] = alternation;
     maneuver_["flags"] = flags;
+
+    maneuver_["mission_time"] = mission_time;
+    maneuver_["mission_start_delay"] = mission_start_delay;
+    maneuver_["thruster_power"] = thruster_power;
+    maneuver_["vertical_rudders_angle"] = vertical_rudders_angle;
+    maneuver_["horizontal_rudders_angle"] = horizontal_rudders_angle;
+    maneuver_["cycle_frequency"] = cycle_frequency;
     
     maneuver_["timeout"] = timeout;
     maneuver_["custom_string"] = custom_string;
@@ -227,6 +244,15 @@ void Maneuver::deserialize_json(Json::Value maneuver)
     coff = (uint8_t)maneuver["coff"].asUInt64();
     alternation = (uint8_t)maneuver["alternation"].asUInt64();
     flags = (uint8_t)maneuver["flags"].asUInt64();
+
+    mission_time = maneuver["mission_time"].asFloat();
+    mission_start_delay = maneuver["mission_start_delay"].asFloat();
+    thruster_power = maneuver["thruster_power"].asFloat();
+    vertical_rudders_angle = maneuver["vertical_rudders_angle"].asFloat();
+    horizontal_rudders_angle = maneuver["horizontal_rudders_angle"].asFloat();
+    cycle_frequency = maneuver["cycle_frequency"].asFloat();
+    num_cycles = (uint16_t)std::round(mission_time * cycle_frequency);
+    start_test_mission = false;
 
     timeout = (uint16_t)maneuver["timeout"].asUInt64();
     custom_string = maneuver["custom_string"].asString();

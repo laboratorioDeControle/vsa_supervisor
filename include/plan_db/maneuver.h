@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <json/json.h>
+#include <cmath>
 #include "neptus_msgs/msg/maneuver.hpp"
 #include "neptus_msgs/msg/plan_maneuver.hpp"
 #include "../guidance/types.h"
@@ -18,6 +19,7 @@ enum maneuver_id_e
     maneuver_id_station_keeping = 461, // Station Keeping
     maneuver_id_sample = 489,
     maneuver_id_cover_area = 473,
+    maneuver_id_vsa_test = 900
 };
 
 enum maneuver_speed_units_e
@@ -107,7 +109,16 @@ class Maneuver
 
         float radius;
         uint16_t duration;
-
+        
+        float mission_time;
+        float mission_start_delay;
+        float thruster_power;
+        float vertical_rudders_angle;
+        float horizontal_rudders_angle;
+        float cycle_frequency;
+        uint16_t num_cycles;
+        bool start_test_mission;
+        
         uint8_t coff;
         uint8_t alternation;
         uint8_t flags;
