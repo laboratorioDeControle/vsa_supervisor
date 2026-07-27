@@ -61,7 +61,6 @@ Maneuver::Maneuver(neptus_msgs::msg::PlanManeuver maneuver)
     num_cycles = (uint16_t)std::round(dive_time * dive_cycle_frequency);
     dive_test_mission_state = 0;
 
-
     for(int i = 0; i < (int)maneuver.maneuver.polygon.size(); i++)
     {
         vsa_guidance::polygon_vertex_t vertex;
