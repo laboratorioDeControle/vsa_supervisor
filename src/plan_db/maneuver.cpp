@@ -44,6 +44,24 @@ Maneuver::Maneuver(neptus_msgs::msg::PlanManeuver maneuver)
     duration = maneuver.maneuver.duration;
     radius = maneuver.maneuver.radius;
 
+    pre_dive_time = maneuver.maneuver.pre_dive_time;
+    pre_dive_start_delay = maneuver.maneuver.pre_dive_start_delay;
+    pre_dive_thruster_power = maneuver.maneuver.pre_dive_thruster_power;
+    pre_dive_vertical_rudders_angle = maneuver.maneuver.pre_dive_vertical_rudders_angle;
+    pre_dive_horizontal_rudders_angle = maneuver.maneuver.pre_dive_horizontal_rudders_angle;
+
+    dive_time = maneuver.maneuver.dive_time;
+    dive_start_delay = maneuver.maneuver.dive_start_delay;
+    dive_thruster_power = maneuver.maneuver.dive_thruster_power;
+    dive_vertical_rudders_angle = maneuver.maneuver.dive_vertical_rudders_angle;
+    dive_horizontal_rudders_angle = maneuver.maneuver.dive_horizontal_rudders_angle;
+    dive_cycle_frequency = maneuver.maneuver.dive_cycle_frequency;
+    dive_complete_oscilation = maneuver.maneuver.dive_complete_oscilation;
+
+    num_cycles = (uint16_t)std::round(dive_time * dive_cycle_frequency);
+    dive_test_mission_state = 0;
+
+
     for(int i = 0; i < (int)maneuver.maneuver.polygon.size(); i++)
     {
         vsa_guidance::polygon_vertex_t vertex;
@@ -163,6 +181,20 @@ Json::Value Maneuver::serialize_json()
     maneuver_["coff"] = coff;
     maneuver_["alternation"] = alternation;
     maneuver_["flags"] = flags;
+
+    maneuver_["pre_dive_time"] = pre_dive_time;
+    maneuver_["pre_dive_start_delay"] = pre_dive_start_delay;
+    maneuver_["pre_dive_thruster_power"] = pre_dive_thruster_power;
+    maneuver_["pre_dive_vertical_rudders_angle"] = pre_dive_vertical_rudders_angle;
+    maneuver_["pre_dive_horizontal_rudders_angle"] = pre_dive_horizontal_rudders_angle;
+    
+    maneuver_["dive_time"] = dive_time;
+    maneuver_["dive_start_delay"] = dive_start_delay;
+    maneuver_["dive_thruster_power"] = dive_thruster_power;
+    maneuver_["dive_vertical_rudders_angle"] = dive_vertical_rudders_angle;
+    maneuver_["dive_horizontal_rudders_angle"] = dive_horizontal_rudders_angle;
+    maneuver_["dive_cycle_frequency"] = dive_cycle_frequency;
+    maneuver_["dive_complete_oscilation"] = dive_complete_oscilation;
     
     maneuver_["timeout"] = timeout;
     maneuver_["custom_string"] = custom_string;
@@ -227,6 +259,23 @@ void Maneuver::deserialize_json(Json::Value maneuver)
     coff = (uint8_t)maneuver["coff"].asUInt64();
     alternation = (uint8_t)maneuver["alternation"].asUInt64();
     flags = (uint8_t)maneuver["flags"].asUInt64();
+
+    pre_dive_time = maneuver["pre_dive_time"].asFloat();
+    pre_dive_start_delay = maneuver["pre_dive_start_delay"].asFloat();
+    pre_dive_thruster_power = maneuver["pre_dive_thruster_power"].asFloat();
+    pre_dive_vertical_rudders_angle = maneuver["pre_dive_vertical_rudders_angle"].asFloat();
+    pre_dive_horizontal_rudders_angle = maneuver["pre_dive_horizontal_rudders_angle"].asFloat();
+    
+    dive_time = maneuver["dive_time"].asFloat();
+    dive_start_delay = maneuver["dive_start_delay"].asFloat();
+    dive_thruster_power = maneuver["dive_thruster_power"].asFloat();
+    dive_vertical_rudders_angle = maneuver["dive_vertical_rudders_angle"].asFloat();
+    dive_horizontal_rudders_angle = maneuver["dive_horizontal_rudders_angle"].asFloat();
+    dive_cycle_frequency = maneuver["dive_cycle_frequency"].asFloat();
+    dive_complete_oscilation = (uint8_t)maneuver["dive_complete_oscilation"].asUInt64();
+
+    num_cycles = (uint16_t)std::round(dive_time * dive_cycle_frequency);
+    dive_test_mission_state = 0;
 
     timeout = (uint16_t)maneuver["timeout"].asUInt64();
     custom_string = maneuver["custom_string"].asString();

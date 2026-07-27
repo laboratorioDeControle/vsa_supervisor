@@ -33,6 +33,7 @@
 #include <json/json.h>
 
 #include "../include/plan_db/plan_db.h"
+#include "../include/plan_db/maneuver.h"
 #include "../include/guidance/guidance.h"
 #include "../include/guidance/wgs84.h"
 
@@ -131,7 +132,7 @@ class Supervisor : public rclcpp::Node
 
       // Send values to actuators (calculated values from automatic controller, parsed values from teleoperation or
       // values to stop vehicle in case of error or abort maneuver).
-      //send_signal_to_actuators();
+      send_signal_to_actuators();
     }
 
   // Subscribers Callbacks
@@ -155,7 +156,13 @@ class Supervisor : public rclcpp::Node
     {
       for(int i = 0; i < (int)msg.plan_spec.maneuvers.size(); i++)
       {
-        std::cout << msg.plan_spec.maneuvers[i].maneuver_id << std::endl;
+        // VSA Test Mission Case
+        if(msg.plan_spec.maneuvers[i].maneuver.maneuver_imc_id == 900)
+        {
+          vsa_dive_test_mission = new Maneuver(msg.plan_spec.maneuvers[i]);
+          populate_dive_test_mission();
+          return;
+        }
       }
 
       if(msg.op == plan_db_op_e::plan_db_op_set_plan)
@@ -202,9 +209,21 @@ class Supervisor : public rclcpp::Node
     {      
       if(msg.op == 0) // Start Plan
       {
-        if((msg.plan_id == "teleoperation-mode") || (msg.plan_id == "teleoperation-16388"))
+        std::string plan_id_splited = split_string(msg.plan_id, '-');
+
+        if((plan_id_splited == "teleoperation"))
         {
           msg_current_plan_control_state.man_id = msg.plan_id;
+
+          msg_current_plan_control_state.state = (uint8_t)neptus_msgs::msg::PlanControlState::EXECUTING;
+          msg_current_plan_control_state.man_id = "Teleoperation";
+          msg_current_plan_control_state.man_eta = 65535;
+          msg_current_plan_control_state.man_type = 65535;
+          msg_current_plan_control_state.last_outcome = 0;
+          msg_current_plan_control_state.plan_id = msg.plan_id;
+          msg_current_plan_control_state.plan_eta = -1;
+          msg_current_plan_control_state.plan_progress = -1.0;
+
           set_state(neptus_msgs::msg::VehicleState::EXTERNAL);
         }
         else
@@ -255,6 +274,119 @@ class Supervisor : public rclcpp::Node
     {
       // std::cout << ":: Chegou Msg navigation ::" << std::endl;
       msg_current_odometry = msg;
+    }
+
+    void pre_dive_test_delay_callback(void)
+    {
+      if(timer_vsa_dive_test_mission != nullptr)
+      {
+        timer_vsa_dive_test_mission->cancel();
+      }
+
+      if(vsa_dive_test_mission->pre_dive_time > 0.0)
+      {
+        double timer_period = (double)vsa_dive_test_mission->pre_dive_time * 1000.0;
+        std::chrono::duration<double, std::milli>  timer_period_ms{timer_period};
+        timer_vsa_dive_test_mission = this->create_wall_timer(timer_period_ms, std::bind(&Supervisor::pre_dive_test_callback, this));
+
+        actuators_signals.thruster = vsa_dive_test_mission->pre_dive_thruster_power;
+        actuators_signals.vertical_rudders = vsa_dive_test_mission->pre_dive_vertical_rudders_angle;
+        actuators_signals.horizontal_rudders = vsa_dive_test_mission->pre_dive_horizontal_rudders_angle;
+
+        std::cout << "Pre Dive Time > 0" << std::endl;
+      }
+      else
+      {
+        std::cout << "Pre Dive Time == 0" << std::endl;
+        pre_dive_test_callback();
+      }
+    }
+
+    void pre_dive_test_callback(void)
+    {
+      if(timer_vsa_dive_test_mission != nullptr)
+      {
+        timer_vsa_dive_test_mission->cancel();
+      }
+
+      if(vsa_dive_test_mission->dive_start_delay > 0.0)
+      {
+        double timer_period = (double)vsa_dive_test_mission->dive_start_delay * 1000.0;
+        std::chrono::duration<double, std::milli>  timer_period_ms{timer_period};
+        timer_vsa_dive_test_mission = this->create_wall_timer(timer_period_ms, std::bind(&Supervisor::dive_test_delay_callback, this));
+        
+        std::cout << "Dive Delay Time > 0" << std::endl;
+      }
+      else
+      {
+        std::cout << "Dive Delay Time = 0" << std::endl;
+        dive_test_delay_callback();
+      }
+    }
+
+    void dive_test_delay_callback(void)
+    {
+      if(timer_vsa_dive_test_mission != nullptr)
+      {
+        timer_vsa_dive_test_mission->cancel();
+      }
+
+      if(vsa_dive_test_mission->dive_time > 0.0)
+      {
+
+        double timer_period = (1.0 / vsa_dive_test_mission->dive_cycle_frequency);
+        double d_timer_period_ms = (double)(timer_period * 1000.0);
+        std::chrono::duration<double, std::milli>  timer_period_ms{d_timer_period_ms};
+        timer_vsa_dive_test_mission = this->create_wall_timer(timer_period_ms, std::bind(&Supervisor::dive_test_callback, this));
+
+        actuators_signals.thruster = vsa_dive_test_mission->dive_thruster_power;
+        actuators_signals.vertical_rudders = vsa_dive_test_mission->dive_vertical_rudders_angle;
+        actuators_signals.horizontal_rudders = vsa_dive_test_mission->dive_horizontal_rudders_angle;
+
+        std::cout << "Pre Dive Time > 0" << std::endl;
+      }
+      else
+      {
+        std::cout << "Dive Time == 0" << std::endl;
+        finish_plan_execution();
+      }
+    }
+
+    void dive_test_callback(void)
+    {
+      std::cout << "cycles left: " << vsa_dive_test_mission->num_cycles << std::endl;
+      if(vsa_dive_test_mission->num_cycles > 0)
+      {
+        vsa_dive_test_mission->num_cycles -= 1;
+        
+        std::cout << "actuators_signals.vertical_rudders: " << actuators_signals.vertical_rudders << std::endl;
+        std::cout << "actuators_signals.horizontal_rudders: " << actuators_signals.horizontal_rudders << std::endl;
+        
+        if(vsa_dive_test_mission->dive_complete_oscilation)
+        {
+          actuators_signals.vertical_rudders = -actuators_signals.vertical_rudders;
+          actuators_signals.horizontal_rudders = -actuators_signals.horizontal_rudders;
+        }
+        else
+        {
+          if(actuators_signals.vertical_rudders == 0.0 && actuators_signals.horizontal_rudders == 0.0)
+          {
+            actuators_signals.vertical_rudders = vsa_dive_test_mission->dive_vertical_rudders_angle;
+            actuators_signals.horizontal_rudders = vsa_dive_test_mission->dive_horizontal_rudders_angle;
+          }
+          else
+          {
+            actuators_signals.vertical_rudders = 0.0;
+            actuators_signals.horizontal_rudders = 0.0;
+          }
+        }
+      }
+      else
+      {
+        finish_plan_execution();
+      }
+
+      std::cout << "====================================" << std::endl;
     }
   
   // Initialize Functions
@@ -461,7 +593,6 @@ class Supervisor : public rclcpp::Node
       msg_current_plan_control_state.state = (uint8_t)neptus_msgs::msg::PlanControlState::READY;
       msg_current_plan_control_state.man_id = "";
       msg_current_plan_control_state.man_eta = 0;
-      //msg_current_plan_control_state.man_type = neptus_msgs::msg::PlanControlState::
       msg_current_plan_control_state.last_outcome = 0;
       msg_current_plan_control_state.plan_id = "";
       msg_current_plan_control_state.plan_eta = 0;
@@ -530,6 +661,22 @@ class Supervisor : public rclcpp::Node
       pub_rudders->publish(rudders);
     }
 
+    void populate_dive_test_mission(void)
+    {
+      if(vsa_dive_test_mission->pre_dive_start_delay > 0)
+      {
+        double timer_period = (double)vsa_dive_test_mission->pre_dive_start_delay * 1000.0;
+        std::chrono::duration<double, std::milli>  timer_period_ms{timer_period};
+        timer_vsa_dive_test_mission = this->create_wall_timer(timer_period_ms, std::bind(&Supervisor::pre_dive_test_delay_callback, this));
+        std::cout << "Pre Dive Delay Time > 0" << std::endl;
+      }
+      else
+      {
+        std::cout << "Pre Dive Delay Time = 0" << std::endl;
+        pre_dive_test_delay_callback();
+      }
+    }
+
     void populate_trajectory_vector(void)
     {
       trajectory_setpoints.clear();
@@ -568,20 +715,6 @@ class Supervisor : public rclcpp::Node
         {
           trajectory_setpoints.push_back(setpoint);
         }
-        
-        /*
-        std::cout << "msg_current_estimated_state.lat: " << msg_current_estimated_state.lat << std::endl;
-        std::cout << "msg_current_estimated_state.lon: " << msg_current_estimated_state.lon << std::endl;
-        std::cout << "current_maneuver_lat: " << current_maneuver_lat << std::endl;
-        std::cout << "current_maneuver_lon: " << current_maneuver_lon << std::endl;
-        std::cout << "==============================================" << std::endl;
-
-        std::cout << "setpoint_x: " << setpoint.x << std::endl;
-        std::cout << "setpoint_y: " << setpoint.y << std::endl;
-        std::cout << "setpoint_z: " << setpoint.z << std::endl;
-        std::cout << "speed: " << setpoint.speed << std::endl;
-        std::cout << "==============================================" << std::endl;
-        */
       }
     }
 
@@ -602,6 +735,12 @@ class Supervisor : public rclcpp::Node
         timer_station_keeping->cancel();
       }
 
+      if(timer_vsa_dive_test_mission != nullptr)
+      {
+        timer_vsa_dive_test_mission->cancel();
+        delete vsa_dive_test_mission;
+      }
+
       guidance->set_abs_xy_tolerance_error(this->get_parameter("guidance_xy_error_tolerance").as_double());
       
       stop_thruster_align_rudders();
@@ -620,7 +759,24 @@ class Supervisor : public rclcpp::Node
     void set_state(uint8_t state)
     {
       current_state = state;
-      msg_current_vehicle_state.op_mode = current_state;
+      current_reported_state = state;
+      msg_current_vehicle_state.maneuver_type = 0;
+      msg_current_vehicle_state.control_loops = 0;
+
+      if(current_state == neptus_msgs::msg::VehicleState::EXTERNAL)
+      {
+        current_reported_state = neptus_msgs::msg::VehicleState::MANEUVER;
+        uint16_t control_loops = 0x00000002 | 0x00000020 | 0x00000080 | 0x00000100 | 0x00000400;
+        
+        msg_current_vehicle_state.maneuver_type = 452;
+        msg_current_vehicle_state.control_loops = control_loops;
+      }
+      else if(current_state == neptus_msgs::msg::VehicleState::SERVICE)
+      {
+        initialize_plan_control_state();
+      }
+
+      msg_current_vehicle_state.op_mode = current_reported_state;
     }
 
     void state_boot(void)
@@ -743,6 +899,7 @@ class Supervisor : public rclcpp::Node
       rclcpp::TimerBase::SharedPtr timer_entity_monitoring_state_send_msg;
       rclcpp::TimerBase::SharedPtr timer_vehicle_state_send_msg;
       rclcpp::TimerBase::SharedPtr timer_station_keeping;
+      rclcpp::TimerBase::SharedPtr timer_vsa_dive_test_mission;
 
       // Current Recever Msgs
       nav_msgs::msg::Odometry msg_current_odometry;
@@ -756,6 +913,7 @@ class Supervisor : public rclcpp::Node
 
       // State Machine
       uint8_t current_state = neptus_msgs::msg::VehicleState::BOOT;
+      uint8_t current_reported_state = neptus_msgs::msg::VehicleState::BOOT;
       uint8_t current_plan_control_state = neptus_msgs::msg::PlanControlState::INITIALIZING;
 
       double initial_latitude_rad = 0.0; // Initial latitude in radians
@@ -768,6 +926,9 @@ class Supervisor : public rclcpp::Node
       bool is_station_keeping = false;
       float station_keeping_duration = -1.0;
       float station_keeping_radius = 0.0;
+
+      // VSA Test Mission
+      Maneuver *vsa_dive_test_mission = nullptr;
 
       // PlanDB Object pointer
       PlanDB *plan_db_ = nullptr;
