@@ -30,6 +30,8 @@ enum plan_db_op_result_e
     plan_db_op_result_OK = 0,
 };
 
+std::string split_string(std::string input_string, char input_char);
+
 class PlanDB
 {
     public:

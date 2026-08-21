@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <json/json.h>
+#include <cmath>
 #include "neptus_msgs/msg/maneuver.hpp"
 #include "neptus_msgs/msg/plan_maneuver.hpp"
 #include "../guidance/types.h"
@@ -18,6 +19,7 @@ enum maneuver_id_e
     maneuver_id_station_keeping = 461, // Station Keeping
     maneuver_id_sample = 489,
     maneuver_id_cover_area = 473,
+    maneuver_id_vsa_test = 900
 };
 
 enum maneuver_speed_units_e
@@ -107,7 +109,25 @@ class Maneuver
 
         float radius;
         uint16_t duration;
+        
+        // 900 Custom VSA Testing
+        float pre_dive_time;
+        float pre_dive_start_delay;
+        float pre_dive_thruster_power;
+        float pre_dive_vertical_rudders_angle;
+        float pre_dive_horizontal_rudders_angle;
 
+        float dive_time;
+        float dive_start_delay;
+        float dive_thruster_power;
+        float dive_vertical_rudders_angle;
+        float dive_horizontal_rudders_angle;
+        float dive_cycle_frequency;
+        uint8_t dive_complete_oscilation;
+
+        uint16_t num_cycles;
+        uint8_t dive_test_mission_state;
+        
         uint8_t coff;
         uint8_t alternation;
         uint8_t flags;
