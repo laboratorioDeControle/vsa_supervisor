@@ -267,6 +267,8 @@ class Supervisor : public rclcpp::Node
         actuators_signals.vertical_rudders = msg.data[2];
         actuators_signals.horizontal_rudders = msg.data[3];
         send_signal_to_actuators();
+
+        current_motors_protect_counter = motors_protect_counter;
       }
       else
       {
@@ -546,6 +548,8 @@ class Supervisor : public rclcpp::Node
       double motors_command_timer_period = (1.0 / motors_command_timer_frequency) * 1000.0;
       std::chrono::duration<double, std::milli>  motors_command_timer_period_ms{motors_command_timer_period};
       timer_motors_command_loop = this->create_wall_timer(motors_command_timer_period_ms, std::bind(&Supervisor::send_signal_to_actuators, this));
+
+      motors_protect_counter = 1.0 / main_timer_frequency;
     }
 
     void initialize_parameters(void)
@@ -888,6 +892,12 @@ class Supervisor : public rclcpp::Node
 
     void state_teleoperation(void)
     {
+      current_motors_protect_counter -= 1;
+
+      if(current_motors_protect_counter == 0)
+      {
+        stop_thruster_align_rudders();
+      }
     }
 
     void state_error(void)
@@ -948,6 +958,8 @@ class Supervisor : public rclcpp::Node
       double initial_latitude_deg = 0.0; // Initial latitude in degrees
       double initial_longitude_deg = 0.0; // Initial longitude in degrees
       double main_loop_dt = 1.0; // Main Loop dt in secconds
+      double motors_protect_counter = 1.0;
+      double current_motors_protect_counter = 0.0;
 
       // Station Keeping Parameters
       bool is_station_keeping = false;
