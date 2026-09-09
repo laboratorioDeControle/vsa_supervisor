@@ -897,7 +897,7 @@ class Supervisor : public rclcpp::Node
 
       if(current_motors_protect_counter <= 0)
       {
-        stop_thruster_align_rudders();
+        state_error();
       }
     }
 
