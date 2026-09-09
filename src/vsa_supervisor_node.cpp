@@ -773,6 +773,7 @@ class Supervisor : public rclcpp::Node
       guidance->set_abs_xy_tolerance_error(this->get_parameter("guidance_xy_error_tolerance").as_double());
       
       stop_thruster_align_rudders();
+      send_signal_to_actuators();
       set_state(neptus_msgs::msg::VehicleState::SERVICE);
     }
 
@@ -894,9 +895,10 @@ class Supervisor : public rclcpp::Node
     {
       current_motors_protect_counter -= 1;
 
-      if(current_motors_protect_counter == 0)
+      if(current_motors_protect_counter <= 0)
       {
         stop_thruster_align_rudders();
+        send_signal_to_actuators();
       }
     }
 
