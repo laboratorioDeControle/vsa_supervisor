@@ -548,7 +548,7 @@ class Supervisor : public rclcpp::Node
       double motors_command_timer_frequency = this->get_parameter("motors_command_loop_rate_hz").as_double();
       double motors_command_timer_period = (1.0 / motors_command_timer_frequency) * 1000.0;
       std::chrono::duration<double, std::milli>  motors_command_timer_period_ms{motors_command_timer_period};
-      timer_motors_command_loop = this->create_wall_timer(motors_command_timer_period_ms, std::bind(&Supervisor::send_signal_to_actuators, this));
+      // timer_motors_command_loop = this->create_wall_timer(motors_command_timer_period_ms, std::bind(&Supervisor::send_signal_to_actuators, this));
     }
 
     void initialize_parameters(void)
