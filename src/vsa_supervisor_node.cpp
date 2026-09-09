@@ -104,6 +104,7 @@ class Supervisor : public rclcpp::Node
       }
       else if(current_state == neptus_msgs::msg::VehicleState::EXTERNAL)
       {
+        std::cout << "teleoperation: " << current_motors_protect_counter << std::endl;
         state_teleoperation();
       }
       else if(current_state == neptus_msgs::msg::VehicleState::ERROR)
@@ -548,8 +549,6 @@ class Supervisor : public rclcpp::Node
       double motors_command_timer_period = (1.0 / motors_command_timer_frequency) * 1000.0;
       std::chrono::duration<double, std::milli>  motors_command_timer_period_ms{motors_command_timer_period};
       timer_motors_command_loop = this->create_wall_timer(motors_command_timer_period_ms, std::bind(&Supervisor::send_signal_to_actuators, this));
-
-      motors_protect_counter = 1.0 / main_timer_frequency;
     }
 
     void initialize_parameters(void)
@@ -562,6 +561,8 @@ class Supervisor : public rclcpp::Node
 
       double main_loop_frequency = this->get_parameter("main_loop_rate_hz").as_double();
       main_loop_dt = 1.0 / main_loop_frequency;
+      
+      motors_protect_counter = main_timer_frequency;
     }
 
     void initialize_guidance(void)
