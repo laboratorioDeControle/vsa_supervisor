@@ -904,6 +904,7 @@ class Supervisor : public rclcpp::Node
     void state_error(void)
     {
       stop_thruster_align_rudders();
+      send_signal_to_actuators();
       set_state(neptus_msgs::msg::VehicleState::SERVICE);
     }
 
