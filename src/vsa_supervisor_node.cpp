@@ -133,7 +133,7 @@ class Supervisor : public rclcpp::Node
       // Convert Odometry Input in Neptus Estimate State format and publish
       odometry_to_estimate_state();
       
-      if(current_state == neptus_msgs::msg::VehicleState::MANEUVER)
+      if(current_state == neptus_msgs::msg::VehicleState::MANEUVER || current_state == neptus_msgs::msg::VehicleState::EXTERNAL)
       {
         // Send values to actuators (calculated values from automatic controller, parsed values from teleoperation or
         // values to stop vehicle in case of error or abort maneuver).
@@ -267,7 +267,6 @@ class Supervisor : public rclcpp::Node
         actuators_signals.thruster = msg.data[1];
         actuators_signals.vertical_rudders = msg.data[2];
         actuators_signals.horizontal_rudders = msg.data[3];
-        send_signal_to_actuators();
 
         current_motors_protect_counter = motors_protect_counter;
       }
@@ -899,7 +898,6 @@ class Supervisor : public rclcpp::Node
       if(current_motors_protect_counter <= 0)
       {
         stop_thruster_align_rudders();
-        send_signal_to_actuators();
       }
     }
 
