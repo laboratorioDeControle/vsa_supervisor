@@ -562,7 +562,7 @@ class Supervisor : public rclcpp::Node
       double main_loop_frequency = this->get_parameter("main_loop_rate_hz").as_double();
       main_loop_dt = 1.0 / main_loop_frequency;
       
-      motors_protect_counter = main_loop_frequency;
+      motors_protect_counter = main_loop_frequency * 2;
     }
 
     void initialize_guidance(void)
