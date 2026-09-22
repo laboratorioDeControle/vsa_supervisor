@@ -682,10 +682,10 @@ class Supervisor : public rclcpp::Node
       rudders.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
       rudders.layout.dim[0].size = 4;
       rudders.data.resize(4);
-      rudders.data[0] = actuators_signals.vertical_rudders; // yaw
+      rudders.data[0] = actuators_signals.horizontal_rudders; // pitch
       rudders.data[1] = -actuators_signals.vertical_rudders; // -yaw
-      rudders.data[2] = actuators_signals.horizontal_rudders; // pitch
-      rudders.data[3] = -actuators_signals.horizontal_rudders; // -pitch
+      rudders.data[2] = -actuators_signals.horizontal_rudders; // -pitch
+      rudders.data[3] = actuators_signals.vertical_rudders; // yaw
 
       pub_thruster->publish(thruster);
       pub_rudders->publish(rudders);
